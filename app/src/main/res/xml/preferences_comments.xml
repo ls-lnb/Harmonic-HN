@@ -50,6 +50,14 @@
             app:icon="@drawable/ic_animation"
             app:title="Animate comment expand/collapse" />
 
+        <SwitchPreferenceCompat
+            app:singleLineTitle="false"
+            app:key="pref_comments_fullscreen"
+            app:defaultValue="true"
+            app:icon="@drawable/ic_fit_screen"
+            app:title="Draw behind system bars"
+            app:summary="Disable to prevent comments from going below the status bar" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

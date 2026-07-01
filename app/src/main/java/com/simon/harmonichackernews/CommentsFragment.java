@@ -652,7 +652,16 @@ public class CommentsFragment extends Fragment implements CommentsRecyclerViewAd
             public WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat windowInsets) {
                 Insets systemInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
                 rootInsetsApplied = true;
-                topInset = systemInsets.top;
+
+                boolean isFullscreen = SettingsUtils.shouldUseFullscreenComments(v.getContext());
+                if (isFullscreen) {
+                    topInset = systemInsets.top;
+                    v.setPadding(0, 0, 0, 0);
+                } else {
+                    topInset = 0;
+                    v.setPadding(0, systemInsets.top, 0, 0);
+                }
+
                 updateBottomSheetMargin(systemInsets.bottom);
                 updateHeaderSpacerForCurrentSheetOffset();
 
@@ -676,7 +685,7 @@ public class CommentsFragment extends Fragment implements CommentsRecyclerViewAd
                 View emptyView = binding.commentsEmpty;
                 emptyView.setPadding(leftPadding, emptyView.getPaddingTop(), rightPadding, emptyView.getPaddingBottom());
 
-                webViewController.setContainerPadding(0, systemInsets.top, 0, 0);
+                webViewController.setContainerPadding(0, topInset, 0, 0);
 
                 return windowInsets;
             }
@@ -1269,7 +1278,9 @@ public class CommentsFragment extends Fragment implements CommentsRecyclerViewAd
             public WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat windowInsets) {
                 Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
                 recyclerInsetsApplied = true;
-                topInset = insets.top;
+
+                boolean isFullscreen = SettingsUtils.shouldUseFullscreenComments(v.getContext());
+                topInset = isFullscreen ? insets.top : 0;
 
                 updateHeaderSpacerForCurrentSheetOffset();
                 updateCommentsStatusBarAppearance();

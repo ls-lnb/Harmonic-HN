@@ -57,7 +57,11 @@ public class CommentsActivity extends BaseActivity implements CommentsFragment.B
 
         swipeBack = !SettingsUtils.shouldDisableCommentsSwipeBack(getApplicationContext());
 
-        ThemeUtils.setupTheme(this, swipeBack);
+        boolean isFullscreen = SettingsUtils.shouldUseFullscreenComments(getApplicationContext());
+        ThemeUtils.setupTheme(this, swipeBack, isFullscreen);
+        if (!isFullscreen) {
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        }
         ActivityCommentsBinding binding = ActivityCommentsBinding.inflate(getLayoutInflater());
         final View root = binding.getRoot();
 

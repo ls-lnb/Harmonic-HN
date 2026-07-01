@@ -664,6 +664,10 @@ public class SettingsUtils {
         return getBooleanPref("pref_comments_disable_swipeback", true, ctx);
     }
 
+    public static boolean shouldUseFullscreenComments(Context ctx) {
+        return getBooleanPref("pref_comments_fullscreen", true, ctx);
+    }
+
     public static boolean shouldShowTopLevelDepthIndicator(Context ctx) {
         return getBooleanPref("pref_top_level_thread_indicators", false, ctx);
     }
