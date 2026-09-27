@@ -190,6 +190,9 @@ internal fun CommentsPane(
                         color = statusBarColor,
                         statusBarHeight = statusBarHeight,
                         modalScrimAlpha = modalScrimAlpha,
+                        // Keep the default reading bar solid; the appearance setting can
+                        // still opt back into the fading gradient.
+                        opaque = commentsController?.transparentStatusBar != true,
                     )
                 }
                 if (showFloatingUpButton) {

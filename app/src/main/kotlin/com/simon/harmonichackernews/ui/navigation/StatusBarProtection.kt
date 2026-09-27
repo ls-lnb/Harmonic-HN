@@ -26,11 +26,26 @@ internal fun StatusBarProtection(
     color: Color,
     statusBarHeight: Dp,
     modalScrimAlpha: Float = 0f,
+    opaque: Boolean = false,
 ) {
     // Above moving modal cards (100), below floating controls (101). Darken only the
     // gradient's color: a second black overlay would double-dim the content underneath.
     val protectedColor = Color.Black.copy(alpha = modalScrimAlpha.coerceIn(0f, 1f))
         .compositeOver(color)
+    if (opaque) {
+        // Solid strip for reading views: content scrolls behind an opaque, theme-colored
+        // bar instead of ghosting through a fading scrim. No-op without an inset.
+        if (statusBarHeight > 0.dp) {
+            Spacer(
+                Modifier
+                    .zIndex(100.5f)
+                    .fillMaxWidth()
+                    .height(statusBarHeight)
+                    .background(protectedColor),
+            )
+        }
+        return
+    }
     val height = statusBarHeight + 4.dp
     val insetFraction = statusBarHeight / height
     val brush = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

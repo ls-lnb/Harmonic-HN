@@ -126,6 +126,9 @@ class CommentsScreenController private constructor(
         private set
     var statusBarHeaderCoverage by mutableFloatStateOf(0f)
         private set
+    /** Mirrors the transparent-status-bar opt-in so hosts can keep the default bar solid. */
+    var transparentStatusBar by mutableStateOf(false)
+        private set
     var contentVersion by mutableIntStateOf(0)
         private set
     var headerPreviewSuppressed by mutableStateOf(false)
@@ -319,6 +322,10 @@ class CommentsScreenController private constructor(
 
     fun updateStatusBarHeaderCoverage(coverage: Float) {
         statusBarHeaderCoverage = coverage.coerceIn(0f, 1f)
+    }
+
+    fun updateTransparentStatusBar(transparent: Boolean) {
+        transparentStatusBar = transparent
     }
 
     fun requestExpandSheet() {

@@ -632,6 +632,7 @@ class AndroidCommentsCoordinator(
 
     private fun renderCommentsState(state: CommentsState) {
         val controller = composeController ?: return
+        controller.updateTransparentStatusBar(state.settings?.transparentStatusBar == true)
         CommentsScreenStateFactory.create(state, commentsPlatformPresentation())?.let {
             controller.updateContent(it)
         }
