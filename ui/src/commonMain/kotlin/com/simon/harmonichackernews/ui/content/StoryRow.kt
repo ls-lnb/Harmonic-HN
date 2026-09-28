@@ -189,7 +189,10 @@ fun StoryRow(
     onFaviconTintExtracted: ((Int) -> Unit)? = null,
     pageBackground: Color = HarmonicTheme.colors.background,
     typographyOverride: ContentTypography? = null,
-    cardPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+    cardPadding: PaddingValues = PaddingValues(
+        horizontal = if (style.hasBackground || style.tintCard) 12.dp else 8.dp,
+        vertical = 4.dp,
+    ),
 ) {
     val colors = HarmonicTheme.colors
     val typography = typographyOverride ?: rememberContentTypography(
@@ -657,13 +660,13 @@ private fun StoryMainContent(
     }
     val titleStartPadding = if (animateChanges) {
         val animatedTitleStartPadding by animateDpAsState(
-            targetValue = if (style.showIndex) 1.dp else 11.dp,
+            targetValue = if (style.showIndex) 0.dp else 11.dp,
             animationSpec = contentTween(),
             label = "story title start padding",
         )
         animatedTitleStartPadding
     } else if (style.showIndex) {
-        1.dp
+        0.dp
     } else {
         11.dp
     }

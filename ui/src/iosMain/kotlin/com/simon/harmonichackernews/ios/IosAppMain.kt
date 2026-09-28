@@ -1,5 +1,7 @@
 package com.simon.harmonichackernews.ios
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -91,6 +94,13 @@ internal val LocalIosForeground = staticCompositionLocalOf { false }
 private data object IosApplicationBackInfo : NavigationEventInfo()
 
 private enum class IosBackVisualTarget { None, Story, Settings, Submissions, Editor }
+
+private class IosBackSettle(
+    val visualTarget: IosBackVisualTarget,
+    val progress: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
+    val navigation: MainNavigationSnapshot,
+    val commit: Boolean,
+)
 
 /**
  * Swift-facing owner for one Compose iOS scene. The native host retains this object and installs
@@ -166,7 +176,9 @@ private fun IosApp(
     val palette = remember(selection) {
         HarmonicThemeCatalog.resolve(selection.theme, selection.dark, selection.accentPreset)
     }
-    SideEffect { appearance.setDarkAppearance(selection.dark) }
+    SideEffect {
+        appearance.setAppearance(selection.dark, palette.colors.background.toArgb())
+    }
     LaunchedEffect(bootstrap.app.launchState) {
         when (
             bootstrap.app.launchState.consumeLaunchDialog(
@@ -195,22 +207,58 @@ private fun IosApp(
     val visualTarget = iosBackVisualTarget(
         navigation, storiesController, commentsController, settingsCanNavigateBack,
     )
+    var lastBackProgress by remember { mutableStateOf<Float?>(null) }
+    var lastBackTarget by remember { mutableStateOf(IosBackVisualTarget.None) }
+    var backSettle by remember { mutableStateOf<IosBackSettle?>(null) }
+    SideEffect {
+        if (activeBack != null && backSettle == null) {
+            lastBackProgress = backProgress
+            lastBackTarget = visualTarget
+            completedBackTarget = IosBackVisualTarget.None
+        }
+    }
+    val performBack by rememberUpdatedState {
+        handleIosBack(
+            navigation = navigation,
+            scene = scene,
+            storiesController = storiesController,
+            commentsController = commentsController,
+            settingsNavigation = settingsNavigation,
+            onEditorBackRequested = { editorBackRequestVersion++ },
+        )
+    }
+    fun finishBack(commit: Boolean) {
+        if (backSettle != null) return
+        val progress = lastBackProgress
+        if (progress != null && lastBackTarget != IosBackVisualTarget.None) {
+            // Keep the same retained surfaces until the released gesture reaches its endpoint.
+            backSettle = IosBackSettle(lastBackTarget, Animatable(progress), navigation, commit)
+        } else if (commit) {
+            performBack()
+        }
+        lastBackProgress = null
+    }
     NavigationBackHandler(
         state = backEventState,
-        isBackEnabled = canNavigateBack,
-        onBackCancelled = { completedBackTarget = IosBackVisualTarget.None },
-        onBackCompleted = {
-            completedBackTarget = visualTarget
-            handleIosBack(
-                navigation = navigation,
-                scene = scene,
-                storiesController = storiesController,
-                commentsController = commentsController,
-                settingsNavigation = settingsNavigation,
-                onEditorBackRequested = { editorBackRequestVersion++ },
-            )
-        },
+        isBackEnabled = canNavigateBack && backSettle == null,
+        onBackCancelled = { finishBack(commit = false) },
+        onBackCompleted = { finishBack(commit = true) },
     )
+    LaunchedEffect(backSettle, navigation) {
+        val settle = backSettle ?: return@LaunchedEffect
+        // A different navigation action supersedes the pending gesture.
+        if (navigation == settle.navigation) {
+            settle.progress.animateTo(
+                targetValue = if (settle.commit) 1f else 0f,
+                animationSpec = spring(dampingRatio = 1f, stiffness = 400f, visibilityThreshold = 0.001f),
+            )
+            if (settle.commit) {
+                completedBackTarget = settle.visualTarget
+                performBack()
+            }
+        }
+        backSettle = null
+    }
     LaunchedEffect(navigation.storyRequest?.serial) {
         if (navigation.storyRequest != null) completedBackTarget = IosBackVisualTarget.None
     }
@@ -238,9 +286,9 @@ private fun IosApp(
                     onStoriesControllerChanged = { storiesController = it },
                     onCommentsControllerChanged = { commentsController = it },
                     onSettingsNavigationChanged = { settingsNavigation = it },
-                    backVisualTarget = visualTarget,
-                    backProgress = backProgress,
-                    backInProgress = activeBack != null,
+                    backVisualTarget = backSettle?.visualTarget ?: visualTarget,
+                    backProgress = backSettle?.progress?.value ?: backProgress,
+                    backInProgress = activeBack != null || backSettle != null,
                     completedBackTarget = completedBackTarget,
                 )
             }

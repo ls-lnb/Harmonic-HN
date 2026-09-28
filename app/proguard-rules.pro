@@ -39,10 +39,3 @@
 -keep class com.simon.harmonichackernews.localai.litert.LiteRtInferenceEngine {
     public <init>();
 }
-
-# Settings headers reference these fragments by class name from preference XML.
--keep class com.simon.harmonichackernews.settings.*PreferenceFragment
-
-# JLatexMath
--keep class org.scilab.forge.jlatexmath.** { *; }
--dontwarn org.scilab.forge.jlatexmath.**

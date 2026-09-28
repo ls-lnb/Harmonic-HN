@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +42,7 @@ import com.simon.harmonichackernews.settings.StoryPreviewMode
 import com.simon.harmonichackernews.ui.content.StoryRowModel
 import com.simon.harmonichackernews.ui.content.rememberResourceTintPalette
 import com.simon.harmonichackernews.ui.theme.HarmonicTheme
+import com.simon.harmonichackernews.ui.theme.rememberStoryTintColor
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -62,11 +64,10 @@ fun WidgetPreviewStoryRow(
     val palette = rememberResourceTintPalette(model.previewImageFallback ?: model.faviconFallback)
     val targetBackground = when {
         configuration.displayStyle == DisplayStyle.FLAT -> colors.background
-        configuration.tint && palette != null -> Color(PreviewTintPolicy.ensureCardTintContrast(
+        configuration.tint && palette != null -> rememberStoryTintColor(
             PreviewTintPolicy.calculateCardTint(colors.contentCardBackground.toArgb(), palette, paletteTintConfigKey),
-            colors.background.toArgb(),
             paletteTintConfigKey,
-        ))
+        ) ?: colors.contentCardBackground
         else -> colors.contentCardBackground
     }
     val background by animateColorAsState(targetBackground, tween(220), label = "Widget card tint")
@@ -96,9 +97,9 @@ fun WidgetPreviewStoryRow(
                     Box(Modifier.weight(1f).heightIn(min = if (medium)
                         (if (hasImage) WidgetDimensions.mediumImageHeight else WidgetDimensions.mediumNoImageHeight) + 16.dp else 0.dp)) {
                         Row(Modifier.align(Alignment.CenterStart).padding(start = 8.dp, top = 12.dp, bottom = 12.dp)) {
-                            if (showIndex) WidgetPreviewText(model.index, fontFamily, WidgetTypography.TITLE_SIZE - 1,
-                                colors.textSecondary, Modifier.width(WidgetDimensions.indexWidth).testTag("widget-preview-index"))
-                            Column(Modifier.weight(1f)) {
+                            if (showIndex) WidgetPreviewText(model.index, fontFamily, WidgetTypography.INDEX_SIZE,
+                                colors.textSecondary, Modifier.width(WidgetDimensions.indexWidth).alignBy(FirstBaseline).testTag("widget-preview-index"))
+                            Column(Modifier.weight(1f).alignBy(FirstBaseline)) {
                                 WidgetPreviewText(model.title, fontFamily, WidgetTypography.TITLE_SIZE, colors.contentPrimary,
                                     Modifier.testTag("widget-preview-title"), bold = true, maxLines = 4)
                                 Spacer(Modifier.height(6.dp))

@@ -99,13 +99,23 @@ private const val COMMENTS_CACHE_BEHIND_FRACTION = 0.5f
 private val COMMENTS_UP_BUTTON_NAVIGATION_INSET = 64.dp
 private const val COMMENT_PLACEMENT_DURATION_MILLIS = 220
 
+/** Hosts may share the live list position with a containing sheet's gesture arbitration. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun rememberCommentsListState(): LazyListState = rememberLazyListState(
+    cacheWindow = LazyLayoutCacheWindow(
+        aheadFraction = COMMENTS_CACHE_AHEAD_FRACTION,
+        behindFraction = COMMENTS_CACHE_BEHIND_FRACTION,
+    ),
+)
+
 /** Only structural list changes need placement motion; animated row/header sizes already move it. */
 @Composable
 private fun rememberCommentPlacementAnimation(
     visibleComments: List<PortableVisibleComment>,
     enabled: Boolean,
 ): Boolean {
-    val visibleIds = remember(visibleComments) { visibleComments.map { it.comment.id } }
+    val visibleIds = remember(visibleComments) { CommentTreeStructure(visibleComments, idsOnly = true) }
     var previousIds by remember { mutableStateOf(visibleIds) }
     var animating by remember { mutableStateOf(false) }
     val visibilityChanged = previousIds != visibleIds && previousIds.isNotEmpty() && visibleIds.isNotEmpty()
@@ -200,6 +210,7 @@ fun CommentsScreen(
     headerContent: @Composable () -> Unit,
     searchDialog: @Composable () -> Unit,
     actionOverlay: @Composable () -> Unit,
+    listState: LazyListState = rememberCommentsListState(),
 ) {
     val settings = controller.displaySettings
     if (settings == null) {
@@ -216,12 +227,6 @@ fun CommentsScreen(
 
     val colors = HarmonicTheme.colors
     val commentsHazeState = currentCommentsHazeState()
-    val listState = rememberLazyListState(
-        cacheWindow = LazyLayoutCacheWindow(
-            aheadFraction = COMMENTS_CACHE_AHEAD_FRACTION,
-            behindFraction = COMMENTS_CACHE_BEHIND_FRACTION,
-        ),
-    )
     val pullToRefreshState = rememberPullToRefreshState()
     val visibleComments = controller.visibleComments
     // Let the loading header settle before the first comments become readable. Keep one
@@ -269,6 +274,7 @@ fun CommentsScreen(
     }
 
     LaunchedEffect(listState, visibleComments, animatedRows.exitingIds) {
+        var previousHeaderCoverage: Float? = null
         snapshotFlow {
             val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }
             val coverage = if (header == null || topInsetPx <= 0) {
@@ -286,8 +292,11 @@ fun CommentsScreen(
         }.distinctUntilChanged().collect { (_, _, coverage) ->
             // During collapse, lazy indices also contain retained exiting children.
             if (animatedRows.exitingIds.isEmpty()) controller.updateScrollPosition(listState, visibleComments)
-            controller.updateStatusBarHeaderCoverage(coverage)
-            controller.listener.onHeaderCoverageChanged(coverage)
+            if (previousHeaderCoverage != coverage) {
+                previousHeaderCoverage = coverage
+                controller.updateStatusBarHeaderCoverage(coverage)
+                controller.listener.onHeaderCoverageChanged(coverage)
+            }
         }
     }
 
