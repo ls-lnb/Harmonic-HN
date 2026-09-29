@@ -23,6 +23,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -673,6 +674,8 @@ private fun StoryMainContent(
     Box(
         modifier = modifier
             .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
                 enabled = onLinkClick != null || onLinkLongClick != null,
                 onClick = { onLinkClick?.invoke() },
                 onLongClick = onLinkLongClick,
