@@ -29,6 +29,22 @@ android {
 
     }
 
+    // Local release signing, driven by the shared Gradle properties in
+    // ~/.gradle/gradle.properties (androidSigning.keystoreFile / .keystorePassword /
+    // .keyPassword). When they are absent -- e.g. on CI, which signs the built
+    // artifacts afterwards -- release build types stay unsigned exactly as before.
+    signingConfigs {
+        release {
+            def keystoreFilePath = providers.gradleProperty("androidSigning.keystoreFile").getOrNull()
+            if (keystoreFilePath != null) {
+                storeFile = rootProject.file(keystoreFilePath)
+                storePassword = providers.gradleProperty("androidSigning.keystorePassword").getOrNull()
+                keyAlias = "harmonichn"
+                keyPassword = providers.gradleProperty("androidSigning.keyPassword").getOrNull()
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -42,6 +58,9 @@ android {
                     getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro"
             )
+            // Signed only when the shared signing properties exist; inherited by
+            // fossRelease / playRelease through initWith(release).
+            signingConfig = signingConfigs.release.storeFile != null ? signingConfigs.release : null
         }
 
         debug {
